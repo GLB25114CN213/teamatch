@@ -183,7 +183,7 @@ export default function OnboardingRegisterPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Aarav Sharma"
+                    placeholder="Enter your full name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full p-3 bg-[#F8F7F5] border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#0A2B22]"

@@ -73,7 +73,7 @@ export function NetworkGraphHero() {
         </div>
       </div>
 
-      {/* NODE 1: Aarav Sharma (Top Left) */}
+      {/* NODE 1: Candidate (Top Left) */}
       <div
         onMouseEnter={() => setHoveredNode('aarav')}
         onMouseLeave={() => setHoveredNode(null)}
@@ -86,7 +86,7 @@ export function NetworkGraphHero() {
         <div className="relative">
           <img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
-            alt="Aarav"
+            alt="Candidate"
             className="w-10 h-10 rounded-lg object-cover border border-[#B7F34A]/40"
           />
           <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#19C37D] rounded-full border-2 border-[#051A14] flex items-center justify-center">
@@ -94,14 +94,14 @@ export function NetworkGraphHero() {
           </span>
         </div>
         <div>
-          <h4 className="font-extrabold text-xs text-white">Aarav S.</h4>
+          <h4 className="font-extrabold text-xs text-white">Full Stack Dev</h4>
           <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-[#B7F34A] text-[#051A14]">
             Python
           </span>
         </div>
       </div>
 
-      {/* NODE 2: Priya Patel (Top Right) */}
+      {/* NODE 2: Candidate (Top Right) */}
       <div
         onMouseEnter={() => setHoveredNode('priya')}
         onMouseLeave={() => setHoveredNode(null)}
@@ -114,7 +114,7 @@ export function NetworkGraphHero() {
         <div className="relative">
           <img
             src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
-            alt="Priya"
+            alt="Candidate"
             className="w-10 h-10 rounded-lg object-cover border border-[#B7F34A]/40"
           />
           <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#19C37D] rounded-full border-2 border-[#051A14] flex items-center justify-center">
@@ -122,14 +122,14 @@ export function NetworkGraphHero() {
           </span>
         </div>
         <div>
-          <h4 className="font-extrabold text-xs text-white">Priya P.</h4>
+          <h4 className="font-extrabold text-xs text-white">ML Engineer</h4>
           <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-[#19C37D] text-[#051A14]">
             PyTorch
           </span>
         </div>
       </div>
 
-      {/* NODE 3: Rohan Gupta (Bottom Center) */}
+      {/* NODE 3: Candidate (Bottom Center) */}
       <div
         onMouseEnter={() => setHoveredNode('rohan')}
         onMouseLeave={() => setHoveredNode(null)}
@@ -142,7 +142,7 @@ export function NetworkGraphHero() {
         <div className="relative">
           <img
             src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
-            alt="Rohan"
+            alt="Candidate"
             className="w-10 h-10 rounded-lg object-cover border border-[#B7F34A]/40"
           />
           <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#19C37D] rounded-full border-2 border-[#051A14] flex items-center justify-center">
@@ -150,7 +150,7 @@ export function NetworkGraphHero() {
           </span>
         </div>
         <div>
-          <h4 className="font-extrabold text-xs text-white">Rohan G.</h4>
+          <h4 className="font-extrabold text-xs text-white">Backend Lead</h4>
           <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-[#EFECE6] text-[#051A14]">
             FastAPI
           </span>

@@ -244,11 +244,11 @@ export default function LandingPage() {
             <div className="flex items-center space-x-3">
               <img
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
-                alt="Priya"
+                alt="Candidate Profile"
                 className="w-10 h-10 rounded-lg object-cover border border-[#B7F34A]/30"
               />
               <div>
-                <span className="font-extrabold text-white text-sm block">Priya Sharma</span>
+                <span className="font-extrabold text-white text-sm block">ML Specialist</span>
                 <span className="text-[10px] text-[#9BB0A6]">IT · 3rd Year</span>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function LandingPage() {
                 <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-900 border border-emerald-200">
                   SIH 2026 Entry
                 </span>
-                <span className="text-xs font-semibold text-gray-500">By Aarav S. (CSE)</span>
+                <span className="text-xs font-semibold text-gray-500">Student Team Project (CSE)</span>
               </div>
               <h3 className="font-serif-editorial text-2xl text-gray-900">AI Women Safety & Geo-Alert Engine</h3>
               <p className="text-xs text-[#5A6963] leading-relaxed">
@@ -333,7 +333,7 @@ export default function LandingPage() {
                 <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-900 border border-emerald-200">
                   Research Project
                 </span>
-                <span className="text-xs font-semibold text-gray-500">By Rohan G. (IT)</span>
+                <span className="text-xs font-semibold text-gray-500">Student Team Project (IT)</span>
               </div>
               <h3 className="font-serif-editorial text-2xl text-gray-900">Distributed Micro-Loans Protocol</h3>
               <p className="text-xs text-[#5A6963] leading-relaxed">
