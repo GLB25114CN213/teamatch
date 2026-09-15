@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+brain.md
+generate-pdf.js
 
 # debug
 npm-debug.log*
@@ -30,12 +32,21 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# environment variables & secrets
+.env
+.env.*
+!.env.example
 
-# vercel
+# database & local uploads
+*.db
+*.db-journal
+prisma/dev.db
+public/uploads/*
+!public/uploads/.gitkeep
+
+# system & artifacts
 .vercel
-
-# typescript
+.gemini
+brain
 *.tsbuildinfo
 next-env.d.ts

@@ -1,0 +1,219 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String          @id @default(uuid())
+  email        String          @unique // Enforced *@glbitm.ac.in
+  name         String
+  passwordHash String?
+  isVerified   Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  profile       StudentProfile?
+  notifications Notification[]
+}
+
+model StudentProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  branch            String   // CSE, IT, ECE, AI/DS, ME, etc.
+  year              String   // 1st Year, 2nd Year, 3rd Year, 4th Year
+  linkedinUrl       String   // Mandatory LinkedIn
+  githubUrl         String   // Mandatory GitHub
+  githubAccessToken String?  // Encrypted access token if OAuth linked
+  bio               String?
+  avatarUrl         String?
+  availability      String   @default("Available") // "Available", "Looking for Team", "Busy"
+  preferredTeamSize Int      @default(4)
+  interests         String   @default("[]") // JSON string array: ["SIH", "Hackathons"]
+  preferredDomains  String   @default("[]") // JSON string array: ["AI/ML", "Web Dev"]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  skills        StudentSkill[]
+  projects      Project[]
+  opportunities Opportunity[]        @relation("CreatedOpportunities")
+  interestsSent OpportunityInterest[] @relation("SentInterests")
+  sentInvites   Invitation[]          @relation("SentInvitations")
+  rcvdInvites   Invitation[]          @relation("ReceivedInvitations")
+  teamMembers   TeamMember[]
+}
+
+model Skill {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  category      String         @default("Technical") // Technical, Design, Soft Skill
+  studentSkills StudentSkill[]
+}
+
+model StudentSkill {
+  id              String         @id @default(uuid())
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skillId         String
+  skill           Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  
+  // CRITICAL REQUIREMENT: Strict separation of Verified vs Self-Declared skills
+  isVerified      Boolean        @default(false) 
+  confidence      String?        // High, Medium, Low (for Verified skills)
+  evidenceCount   Int            @default(0)
+  evidenceSummary String?        // e.g. "Extracted from 4 repos + API backend"
+
+  createdAt       DateTime       @default(now())
+
+  @@unique([studentId, skillId, isVerified])
+}
+
+model Project {
+  id                   String           @id @default(uuid())
+  studentId            String
+  student              StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  title                String
+  description          String
+  githubUrl            String?
+  normalizedGithubUrl  String?          // Used for project deduplication
+  liveUrl              String?
+  demoUrl              String?
+  role                 String?          // e.g. Lead Frontend Developer
+  teamSize             Int              @default(1)
+  technologies         String           @default("[]") // JSON array string
+  uploadedFilesJson    String           @default("[]") // JSON array of uploaded file metadata
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  analysis             ProjectAnalysis?
+
+  @@unique([studentId, normalizedGithubUrl])
+}
+
+model ProjectAnalysis {
+  id                        String    @id @default(uuid())
+  projectId                 String    @unique
+  project                   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Async queue status: queued -> analyzing -> completed / failed
+  status                    String    @default("queued") 
+  skillsJson                String    @default("[]") // Extracted verified skills
+  domainsJson               String    @default("[]") // Extracted domains
+  complexity                String    @default("Intermediate") // Beginner, Intermediate, Advanced
+  
+  // AI-Assisted Development Assessment
+  aiAssistanceLevel         String    @default("Light") // Minimal, Light, Moderate, Heavy, Insufficient
+  aiAssistanceEvidence      String    @default("[]") // JSON array string of evidence bullets
+  
+  // Technical Ownership Assessment
+  technicalOwnershipLevel   String    @default("High") // High, Medium, Low
+  technicalOwnershipEvidence String   @default("[]") // JSON array string of evidence bullets
+  
+  summary                   String?
+  retryCount                Int       @default(0)
+  failureReason             String?
+  analyzedAt                DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+}
+
+model Opportunity {
+  id                 String                @id @default(uuid())
+  creatorId          String
+  creator            StudentProfile        @relation("CreatedOpportunities", fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  title              String
+  type               String                // SIH, Hackathon, College Project, Research, Startup, Personal Project, Other
+  description        String
+  requiredSkillsJson String                @default("[]") // JSON array string of required skills
+  preferredExperience String?
+  membersNeeded      Int                   @default(3)
+  currentTeamSize    Int                   @default(1)
+  deadline           DateTime?
+  status             String                @default("Open") // Open, Filled, Closed
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  interests          OpportunityInterest[]
+  invitations        Invitation[]
+  team               Team?
+}
+
+model OpportunityInterest {
+  id            String         @id @default(uuid())
+  opportunityId String
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       StudentProfile @relation("SentInterests", fields: [studentId], references: [id], onDelete: Cascade)
+  message       String?
+  status        String         @default("Pending") // Pending, Accepted, Rejected
+  createdAt     DateTime       @default(now())
+}
+
+model Invitation {
+  id            String         @id @default(uuid())
+  opportunityId String
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        StudentProfile @relation("SentInvitations", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId    String
+  receiver      StudentProfile @relation("ReceivedInvitations", fields: [receiverId], references: [id], onDelete: Cascade)
+  message       String?
+  status        String         @default("Pending") // Pending, Accepted, Rejected
+  createdAt     DateTime       @default(now())
+}
+
+model Team {
+  id            String       @id @default(uuid())
+  opportunityId String       @unique
+  opportunity   Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  name          String
+  createdAt     DateTime     @default(now())
+  members       TeamMember[]
+}
+
+model TeamMember {
+  id        String         @id @default(uuid())
+  teamId    String
+  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  role      String         @default("Member") // Leader, Member
+  joinedAt  DateTime       @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // invitation, interest, team_update, opportunity
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+model RepositoryCache {
+  id            String   @id @default(uuid())
+  repoUrl       String   @unique
+  normalizedUrl String   @unique
+  lastCommitSha String?
+  analysisJson  String   @default("{}") // JSON string with analysis results
+  updatedAt     DateTime @updatedAt
+}
+
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+}
