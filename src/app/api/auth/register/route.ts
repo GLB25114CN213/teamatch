@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { validateGlbitmEmail, generateOtp, hashPassword } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { sendOtpEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Password must be at least 6 characters long.' }, { status: 400 });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const cleanEmail = email.toLowerCase().trim();
+
+    const existingUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
     if (existingUser && existingUser.isVerified) {
       return NextResponse.json({ error: 'An account with this GLBITM email already exists. Please log in.' }, { status: 400 });
     }
@@ -33,7 +36,7 @@ export async function POST(req: Request) {
     // Save token
     await prisma.verificationToken.create({
       data: {
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         token: otp,
         expiresAt,
       },
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
     if (!existingUser) {
       await prisma.user.create({
         data: {
-          email: email.toLowerCase().trim(),
+          email: cleanEmail,
           name,
           passwordHash,
           isVerified: false,
@@ -52,10 +55,22 @@ export async function POST(req: Request) {
       });
     }
 
+    // Send OTP email via SMTP
+    const emailResult = await sendOtpEmail({
+      toEmail: cleanEmail,
+      studentName: name,
+      otp,
+    });
+
+    const isSmtpActive = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+
     return NextResponse.json({
-      message: 'Verification code generated for your GLBITM email.',
-      email: email.toLowerCase().trim(),
-      otpPreview: otp, // Output in development response for easy test verification
+      message: isSmtpActive
+        ? `A 6-digit verification code has been sent to your GLBITM inbox (${cleanEmail}).`
+        : 'Verification code generated for your GLBITM email.',
+      email: cleanEmail,
+      // Only include on-screen preview if SMTP is not configured
+      otpPreview: isSmtpActive ? undefined : otp,
     });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
