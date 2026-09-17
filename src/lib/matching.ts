@@ -17,6 +17,115 @@ export interface MatchRecommendation {
   projectCount: number;
 }
 
+export function calculateRealStudentMatchScore(
+  student: {
+    skills: Array<{ isVerified: boolean; confidence?: string | null; skill: { name: string } }>;
+    projects: Array<{ title: string; description: string; analysis?: { domainsJson?: string } | null }>;
+    interests?: string | null;
+    availability?: string;
+  },
+  requiredSkills: string[],
+  opportunityType?: string,
+  opportunityTitleDesc?: string
+): { score: number; reasons: string[] } {
+  const reasons: string[] = [];
+  let score = 0;
+
+  const verified = student.skills.filter((s) => s.isVerified);
+  const selfDeclared = student.skills.filter((s) => !s.isVerified);
+  const verifiedMap = new Map(verified.map((v) => [v.skill.name.toLowerCase(), v]));
+  const selfDeclaredSet = new Set(selfDeclared.map((s) => s.skill.name.toLowerCase()));
+
+  // 1. Required Skills Overlap (Weight: up to 60%)
+  if (requiredSkills.length > 0) {
+    const pointsPerSkill = 60 / requiredSkills.length;
+
+    for (const req of requiredSkills) {
+      const reqLower = req.toLowerCase();
+      const verifiedMatch = verifiedMap.get(reqLower);
+      if (verifiedMatch) {
+        const mult = verifiedMatch.confidence === 'High' ? 1.0 : verifiedMatch.confidence === 'Medium' ? 0.85 : 0.7;
+        const pts = Math.round(pointsPerSkill * mult);
+        score += pts;
+        reasons.push(`✓ ${verifiedMatch.skill.name} — Verified (${verifiedMatch.confidence || 'High'} confidence)`);
+      } else if (selfDeclaredSet.has(reqLower)) {
+        const pts = Math.round(pointsPerSkill * 0.4);
+        score += pts;
+        reasons.push(`✓ ${req} — Self-declared skill`);
+      }
+    }
+  } else {
+    // Evaluate verified skills density if no specific requirements specified (max 40 pts)
+    const verifiedCount = verified.length;
+    if (verifiedCount > 0) {
+      const pts = Math.min(verifiedCount * 10, 40);
+      score += pts;
+      reasons.push(`✓ ${verifiedCount} verified technical skill${verifiedCount > 1 ? 's' : ''}`);
+    }
+  }
+
+  // 2. Domain & Project Evidence Relevance (Weight: up to 25%)
+  if (opportunityTitleDesc) {
+    const text = opportunityTitleDesc.toLowerCase();
+    let relevantProjectCount = 0;
+
+    for (const proj of student.projects) {
+      const projText = (proj.title + ' ' + proj.description).toLowerCase();
+      let domains: string[] = [];
+      try {
+        domains = JSON.parse(proj.analysis?.domainsJson || '[]');
+      } catch {
+        domains = [];
+      }
+
+      if (
+        domains.some((d) => text.includes(d.toLowerCase())) ||
+        projText.split(' ').some((w) => w.length > 3 && text.includes(w))
+      ) {
+        relevantProjectCount++;
+      }
+    }
+
+    if (relevantProjectCount > 0) {
+      const pts = Math.min(relevantProjectCount * 12.5, 25);
+      score += Math.round(pts);
+      reasons.push(`✓ ${relevantProjectCount} relevant project${relevantProjectCount > 1 ? 's' : ''} in domain`);
+    }
+  }
+
+  // 3. Availability & Interest Alignment (Weight: up to 15%)
+  if (student.availability === 'Looking for Team') {
+    score += 8;
+    reasons.push('✓ Actively looking for a team');
+  } else if (student.availability === 'Available') {
+    score += 5;
+    reasons.push('✓ Currently Available');
+  }
+
+  if (opportunityType) {
+    let interests: string[] = [];
+    try {
+      interests = JSON.parse(student.interests || '[]');
+    } catch {
+      interests = [];
+    }
+
+    if (opportunityType === 'SIH' && interests.some((i) => i.toUpperCase().includes('SIH'))) {
+      score += 7;
+      reasons.push('✓ Interested in SIH 2026');
+    } else if (opportunityType === 'Hackathon' && interests.some((i) => i.toLowerCase().includes('hackathon'))) {
+      score += 7;
+      reasons.push('✓ Active hackathon participant');
+    }
+  }
+
+  const finalScore = Math.min(Math.round(score), 100);
+  return {
+    score: finalScore,
+    reasons: reasons.length > 0 ? reasons : ['✓ GLBITM Verified student'],
+  };
+}
+
 export async function calculateTeammateMatchesForOpportunity(
   opportunityId: string
 ): Promise<MatchRecommendation[]> {
@@ -52,83 +161,15 @@ export async function calculateTeammateMatchesForOpportunity(
   const recommendations: MatchRecommendation[] = [];
 
   for (const s of students) {
-    let score = 50; // base score
-    const reasons: string[] = [];
-
-    // Separate verified vs self-declared skills
     const verified = s.skills.filter((sk) => sk.isVerified);
     const selfDeclared = s.skills.filter((sk) => !sk.isVerified);
 
-    const verifiedSkillNames = verified.map((sk) => sk.skill.name.toLowerCase());
-    const selfDeclaredSkillNames = selfDeclared.map((sk) => sk.skill.name.toLowerCase());
-
-    // 1. Evaluate Required Skills against VERIFIED skills (weighted higher!)
-    let verifiedMatches = 0;
-    for (const req of requiredSkills) {
-      const reqLower = req.toLowerCase();
-      const foundVerified = verified.find((v) => v.skill.name.toLowerCase() === reqLower);
-      if (foundVerified) {
-        verifiedMatches++;
-        score += 15;
-        reasons.push(`✓ ${foundVerified.skill.name} — Verified (${foundVerified.confidence || 'High'} confidence)`);
-      } else if (selfDeclaredSkillNames.includes(reqLower)) {
-        score += 5;
-        reasons.push(`✓ ${req} — Self-declared skill`);
-      }
-    }
-
-    // 2. Evaluate Domain & Project Relevance
-    const oppText = (opportunity.title + ' ' + opportunity.description).toLowerCase();
-    let relevantProjectCount = 0;
-    for (const proj of s.projects) {
-      const projText = (proj.title + ' ' + proj.description).toLowerCase();
-      let domains: string[] = [];
-      try {
-        domains = JSON.parse(proj.analysis?.domainsJson || '[]');
-      } catch {
-        domains = [];
-      }
-
-      if (
-        domains.some((d) => oppText.includes(d.toLowerCase())) ||
-        projText.split(' ').some((word) => word.length > 3 && oppText.includes(word))
-      ) {
-        relevantProjectCount++;
-      }
-    }
-
-    if (relevantProjectCount > 0) {
-      score += 12;
-      reasons.push(`✓ ${relevantProjectCount} relevant project${relevantProjectCount > 1 ? 's' : ''} in domain`);
-    }
-
-    // 3. Evaluate Interest Alignment (e.g. SIH interest)
-    let studentInterests: string[] = [];
-    try {
-      studentInterests = JSON.parse(s.interests || '[]');
-    } catch {
-      studentInterests = [];
-    }
-
-    if (opportunity.type === 'SIH' && studentInterests.some((i) => i.toUpperCase().includes('SIH'))) {
-      score += 10;
-      reasons.push('✓ Interested in SIH 2026');
-    } else if (opportunity.type === 'Hackathon' && studentInterests.some((i) => i.toLowerCase().includes('hackathon'))) {
-      score += 10;
-      reasons.push('✓ Active hackathon participant');
-    }
-
-    // 4. Availability Check
-    if (s.availability === 'Available') {
-      score += 5;
-      reasons.push('✓ Currently Available');
-    } else if (s.availability === 'Looking for Team') {
-      score += 8;
-      reasons.push('✓ Actively looking for a team');
-    }
-
-    // Cap match score between 65% and 98% for realistic UI presentation
-    const finalScore = Math.min(Math.max(score, 60), 98);
+    const { score, reasons } = calculateRealStudentMatchScore(
+      s,
+      requiredSkills,
+      opportunity.type,
+      `${opportunity.title} ${opportunity.description}`
+    );
 
     recommendations.push({
       studentId: s.id,
@@ -140,14 +181,15 @@ export async function calculateTeammateMatchesForOpportunity(
       linkedinUrl: s.linkedinUrl,
       githubUrl: s.githubUrl,
       availability: s.availability,
-      matchScore: finalScore,
-      matchReasons: reasons.length > 0 ? reasons : ['✓ GLBITM Verified student', '✓ Compatible branch/year'],
+      matchScore: score,
+      matchReasons: reasons,
       verifiedSkills: verified.map((v) => ({ name: v.skill.name, confidence: v.confidence || 'High' })),
       selfDeclaredSkills: selfDeclared.map((sd) => ({ name: sd.skill.name })),
       projectCount: s.projects.length,
     });
   }
 
-  // Sort by match score descending
+  // Sort by real match score descending
   return recommendations.sort((a, b) => b.matchScore - a.matchScore);
 }
+

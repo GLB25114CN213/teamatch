@@ -168,10 +168,7 @@ export default function DashboardPage() {
                   branch={recommendations[0].branch}
                   year={recommendations[0].year}
                   avatarUrl={recommendations[0].avatarUrl}
-                  matchScore={
-                    recommendations[0].matchScore ||
-                    Math.min(75 + (recommendations[0].verifiedSkills?.length || 0) * 5, 96)
-                  }
+                  matchScore={recommendations[0].matchScore ?? 0}
                   matchReasons={
                     recommendations[0].matchReasons || [
                       `${recommendations[0].verifiedSkills?.[0]?.name || 'Verified capability'} detected in repository evidence`,
@@ -197,7 +194,7 @@ export default function DashboardPage() {
                   branch={st.branch}
                   year={st.year}
                   avatarUrl={st.avatarUrl}
-                  matchScore={st.matchScore || Math.min(70 + (st.verifiedSkills?.length || 0) * 4 - idx * 2, 92)}
+                  matchScore={st.matchScore ?? 0}
                   matchReasons={
                     st.matchReasons || [
                       `${st.verifiedSkills?.[0]?.name || 'Verified evidence'} in submitted projects`,

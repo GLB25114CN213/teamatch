@@ -145,27 +145,58 @@ export default function StudentsDirectoryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {students.map((st, idx) => (
-            <MatchCard
-              key={st.id}
-              id={st.id}
-              name={st.name}
-              branch={st.branch}
-              year={st.year}
-              avatarUrl={st.avatarUrl}
-              matchScore={94 - idx * 2}
-              matchReasons={[
-                'Python — verified through 3 projects',
-                'Computer Vision — 2 relevant projects',
-                'SIH 2026 active interest & available',
-              ]}
-              verifiedSkills={st.verifiedSkills || []}
-              selfDeclaredSkills={st.selfDeclaredSkills || []}
-              availability={st.availability}
-              projectCount={st.projectCount || 2}
-              featured={idx === 0}
-            />
-          ))}
+          {students.map((st, idx) => {
+            const searchTerms = [searchQuery, selectedDomain].filter((t) => t && t !== 'All').map((t) => t.toLowerCase());
+            let matchScore = 0;
+            const matchReasons: string[] = [];
+
+            const verified = st.verifiedSkills || [];
+            const selfDeclared = st.selfDeclaredSkills || [];
+            const projectCount = st.projectCount || 0;
+
+            if (searchTerms.length > 0) {
+              let matchedCount = 0;
+              for (const term of searchTerms) {
+                const vMatch = verified.find((v: any) => v.name.toLowerCase().includes(term));
+                if (vMatch) {
+                  matchedCount++;
+                  matchReasons.push(`✓ Verified ${vMatch.name} evidence`);
+                } else {
+                  const sMatch = selfDeclared.find((s: any) => s.name.toLowerCase().includes(term));
+                  if (sMatch) {
+                    matchedCount++;
+                    matchReasons.push(`✓ Self-declared ${sMatch.name}`);
+                  }
+                }
+              }
+              matchScore = Math.round((matchedCount / searchTerms.length) * 100);
+            } else if (verified.length > 0 || projectCount > 0) {
+              matchScore = Math.min(verified.length * 25 + projectCount * 15, 100);
+              matchReasons.push(`✓ ${verified.length} verified skill${verified.length > 1 ? 's' : ''}`);
+              if (projectCount > 0) matchReasons.push(`✓ ${projectCount} analyzed project evidence`);
+            } else {
+              matchScore = 0;
+              matchReasons.push('✓ GLBITM Student Profile');
+            }
+
+            return (
+              <MatchCard
+                key={st.id}
+                id={st.id}
+                name={st.name}
+                branch={st.branch}
+                year={st.year}
+                avatarUrl={st.avatarUrl}
+                matchScore={matchScore}
+                matchReasons={matchReasons}
+                verifiedSkills={verified}
+                selfDeclaredSkills={selfDeclared}
+                availability={st.availability}
+                projectCount={projectCount}
+                featured={idx === 0}
+              />
+            );
+          })}
         </div>
       )}
     </div>

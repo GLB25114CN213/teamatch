@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calculateTeammateMatchesForOpportunity } from '@/lib/matching';
+import { getCurrentUser } from '@/lib/auth';
+import { calculateTeammateMatchesForOpportunity, calculateRealStudentMatchScore } from '@/lib/matching';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const currentUser = await getCurrentUser();
+
     const opportunity = await prisma.opportunity.findUnique({
       where: { id },
       include: {
@@ -23,6 +26,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     if (!opportunity) {
       return NextResponse.json({ error: 'Opportunity not found.' }, { status: 404 });
+    }
+
+    const requiredSkills: string[] = JSON.parse(opportunity.requiredSkillsJson || '[]');
+
+    // Calculate real match for current user if logged in
+    let userMatch = null;
+    if (currentUser?.profile) {
+      const fullProfile = await prisma.studentProfile.findUnique({
+        where: { id: currentUser.profile.id },
+        include: {
+          skills: { include: { skill: true } },
+          projects: { include: { analysis: true } },
+        },
+      });
+
+      if (fullProfile) {
+        userMatch = calculateRealStudentMatchScore(
+          fullProfile,
+          requiredSkills,
+          opportunity.type,
+          `${opportunity.title} ${opportunity.description}`
+        );
+      }
     }
 
     // Generate explainable candidate matches
@@ -50,6 +76,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         team: opportunity.team,
       },
       recommendations,
+      userMatch,
     });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

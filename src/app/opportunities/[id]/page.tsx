@@ -13,6 +13,8 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true);
   const [interestSent, setInterestSent] = useState(false);
 
+  const [userMatch, setUserMatch] = useState<any>(null);
+
   useEffect(() => {
     fetch(`/api/opportunities/${resolvedParams.id}`)
       .then((res) => res.json())
@@ -20,6 +22,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
         if (data.opportunity) {
           setOpportunity(data.opportunity);
           setRecommendations(data.recommendations || []);
+          if (data.userMatch) setUserMatch(data.userMatch);
         }
         setLoading(false);
       })
@@ -116,22 +119,22 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
             </span>
             <h3 className="font-serif-editorial text-2xl text-white mt-0.5">Why you fit this opportunity</h3>
           </div>
-          <MatchScoreRing score={92} size={64} strokeWidth={5} />
+          <MatchScoreRing score={userMatch?.score ?? 0} size={64} strokeWidth={5} />
         </div>
 
         <div className="space-y-2 text-xs text-[#F8F7F5]">
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-[#19C37D] shrink-0" />
-            <span>Python — verified in 3 repositories</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-[#19C37D] shrink-0" />
-            <span>AI/ML — 3 relevant projects analyzed</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-[#19C37D] shrink-0" />
-            <span>SIH 2026 active team seeker</span>
-          </div>
+          {userMatch?.reasons && userMatch.reasons.length > 0 ? (
+            userMatch.reasons.map((reason: string, idx: number) => (
+              <div key={idx} className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-[#19C37D] shrink-0" />
+                <span>{reason}</span>
+              </div>
+            ))
+          ) : (
+            <div className="text-xs text-gray-400 italic">
+              Submit your project evidence to generate your verified match score against this opportunity.
+            </div>
+          )}
         </div>
       </div>
 
@@ -155,11 +158,8 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
               branch={rec.branch}
               year={rec.year}
               avatarUrl={rec.avatarUrl}
-              matchScore={rec.matchScore || 92}
-              matchReasons={rec.matchReasons || [
-                'Python — verified in 3 repos',
-                'Computer Vision — 2 projects',
-              ]}
+              matchScore={rec.matchScore ?? 0}
+              matchReasons={rec.matchReasons || []}
               verifiedSkills={rec.verifiedSkills || []}
               selfDeclaredSkills={rec.selfDeclaredSkills || []}
               availability={rec.availability}
