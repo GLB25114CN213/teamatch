@@ -3,6 +3,11 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && !process.env.FORCE_SEED) {
+    console.log('⚠️ Production environment detected. Skipping database seeding.');
+    return;
+  }
+
   console.log('🌱 Starting GLBITM TeamMatch Database Seeding...');
 
   // Clean existing tables

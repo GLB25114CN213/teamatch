@@ -117,15 +117,21 @@ export default function OnboardingRegisterPage() {
           description: projectDesc || 'Project submitted during onboarding.',
           githubUrl: projectGithub || githubUrl,
           uploadedFilesJson: fileJson,
+          branch,
+          year,
+          bio,
+          linkedinUrl,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Project creation failed');
 
-      if (data.project?.id) setCreatedProjectId(data.project.id);
-      setCurrentStep(5);
-      triggerAiPoll(data.project?.id);
+      if (data.project?.id) {
+        setCreatedProjectId(data.project.id);
+        setCurrentStep(5);
+        startRealAnalysisPolling(data.project.id);
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -133,12 +139,23 @@ export default function OnboardingRegisterPage() {
     }
   };
 
-  // Step 5: Simulate/Poll AI analysis status
-  const triggerAiPoll = (projId: string) => {
+  // Step 5: Real Polling of AI analysis status
+  const startRealAnalysisPolling = (projId: string) => {
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
-    }, 2500);
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/projects/${projId}`);
+        const data = await res.json();
+        const status = data.project?.analysis?.status;
+
+        if (status === 'completed' || status === 'failed') {
+          clearInterval(interval);
+          setAnalyzing(false);
+        }
+      } catch {
+        // Continue polling until completed or failed
+      }
+    }, 2000);
   };
 
   return (

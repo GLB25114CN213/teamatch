@@ -176,7 +176,10 @@ export function Navbar() {
 
             {/* Profile Avatar */}
             {currentUser?.user ? (
-              <Link href="/students" className="flex items-center space-x-2 p-1 bg-[#0A2B22] rounded-lg border border-[#B7F34A]/20 hover:border-[#B7F34A]/40 transition-colors">
+              <Link
+                href={currentUser.profile?.id ? `/students/${currentUser.profile.id}` : '/students'}
+                className="flex items-center space-x-2 p-1 bg-[#0A2B22] rounded-lg border border-[#B7F34A]/20 hover:border-[#B7F34A]/40 transition-colors"
+              >
                 <img
                   src={currentUser.profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
                   alt="Avatar"

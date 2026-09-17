@@ -150,37 +150,91 @@ export default function StudentProfileDetailPage({ params }: { params: Promise<{
       </div>
 
       {/* DEVELOPMENT PROFILE ASSESSMENT */}
-      <div className="editorial-card p-7 space-y-3">
-        <h3 className="font-serif-editorial text-xl text-gray-900 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-emerald-700" />
-          Development Profile Assessment
-        </h3>
-        <p className="text-xs text-[#5A6963] leading-relaxed">
-          Technical ownership and AI assistance levels are derived objectively from source code commit history, PR patterns, and repository architecture.
-        </p>
+      {(() => {
+        const completedAnalyses = student.projects
+          ?.map((p: any) => p.analysis)
+          ?.filter((a: any) => a && a.status === 'completed') || [];
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 block mb-1">
-              AI-Assisted Development
-            </span>
-            <span className="font-extrabold text-gray-900 text-sm">Moderate</span>
-            <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
-              AI assistance appears moderate based on repository history, prompt-assisted boilerplate generation, and commit structure.
-            </p>
-          </div>
+        if (completedAnalyses.length === 0) {
+          return (
+            <div className="editorial-card p-8 text-center space-y-4 border border-dashed border-gray-300">
+              <h3 className="font-serif-editorial text-2xl text-gray-900">Your profile analysis isn't ready yet.</h3>
+              <p className="text-xs text-[#5A6963] max-w-md mx-auto">
+                Submit your project and connect your GitHub to generate your evidence-based profile.
+              </p>
+              <Link
+                href="/projects"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-[#0A2B22] text-[#B7F34A] font-extrabold text-xs rounded-xl hover:bg-[#051A14] transition-colors shadow-sm"
+              >
+                <span>+ Submit Project Evidence</span>
+              </Link>
+            </div>
+          );
+        }
 
-          <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-900 block mb-1">
-              Technical Ownership
-            </span>
-            <span className="font-extrabold text-emerald-950 text-sm">High</span>
-            <p className="text-[11px] text-emerald-900/80 mt-1 leading-relaxed">
-              Demonstrates strong architectural reasoning, custom business logic implementation, and manual debugging commits across repositories.
+        const latestAnalysis = completedAnalyses[0];
+        let aiEv: string[] = [];
+        let ownerEv: string[] = [];
+
+        try {
+          aiEv = JSON.parse(latestAnalysis.aiAssistanceEvidence || '[]');
+          ownerEv = JSON.parse(latestAnalysis.technicalOwnershipEvidence || '[]');
+        } catch {}
+
+        return (
+          <div className="editorial-card p-7 space-y-3">
+            <h3 className="font-serif-editorial text-xl text-gray-900 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-emerald-700" />
+              Development Profile Assessment
+            </h3>
+            <p className="text-xs text-[#5A6963] leading-relaxed">
+              Technical ownership and AI assistance levels are derived objectively from submitted source code, repository commits, and project evidence.
             </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 block mb-1">
+                  AI-Assisted Development
+                </span>
+                <span className="font-extrabold text-gray-900 text-sm">
+                  {latestAnalysis.aiAssistanceLevel || 'Light'}
+                </span>
+                {aiEv.length > 0 ? (
+                  <ul className="mt-1 space-y-1">
+                    {aiEv.map((item, idx) => (
+                      <li key={idx} className="text-[11px] text-gray-600 leading-relaxed">• {item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
+                    AI assistance level assessed from code structure and repository evidence.
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-900 block mb-1">
+                  Technical Ownership
+                </span>
+                <span className="font-extrabold text-emerald-950 text-sm">
+                  {latestAnalysis.technicalOwnershipLevel || 'High'}
+                </span>
+                {ownerEv.length > 0 ? (
+                  <ul className="mt-1 space-y-1">
+                    {ownerEv.map((item, idx) => (
+                      <li key={idx} className="text-[11px] text-emerald-900/80 leading-relaxed">• {item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[11px] text-emerald-900/80 mt-1 leading-relaxed">
+                    Technical ownership verified through original business logic and commit evidence.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Analyzed Projects Portfolio */}
       <section className="space-y-4">

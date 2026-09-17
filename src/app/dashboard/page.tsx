@@ -103,7 +103,9 @@ export default function DashboardPage() {
             <FolderCode className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-gray-900 text-lg block leading-none">3 Projects</span>
+            <span className="font-extrabold text-gray-900 text-lg block leading-none">
+              {currentUser?.profile?.projects?.length ?? (currentUser?.profile ? 0 : 0)} Projects
+            </span>
             <span className="text-xs text-[#5A6963] font-medium mt-1 block">GitHub Repos Analyzed</span>
           </div>
         </div>
@@ -113,7 +115,9 @@ export default function DashboardPage() {
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-gray-900 text-lg block leading-none">4 Verified Skills</span>
+            <span className="font-extrabold text-gray-900 text-lg block leading-none">
+              {currentUser?.profile?.skills?.filter((sk: any) => sk.isVerified)?.length ?? 0} Verified Skills
+            </span>
             <span className="text-xs text-[#5A6963] font-medium mt-1 block">Evidence-Backed Capability</span>
           </div>
         </div>
@@ -149,6 +153,10 @@ export default function DashboardPage() {
 
         {loading ? (
           <div className="p-12 text-center text-xs text-gray-500 editorial-card">Loading recommendations...</div>
+        ) : recommendations.length === 0 ? (
+          <div className="p-12 text-center text-xs text-gray-500 editorial-card">
+            No candidate recommendations available yet.
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Primary Featured Candidate */}
@@ -160,16 +168,20 @@ export default function DashboardPage() {
                   branch={recommendations[0].branch}
                   year={recommendations[0].year}
                   avatarUrl={recommendations[0].avatarUrl}
-                  matchScore={94}
-                  matchReasons={[
-                    'Python — verified through 3 projects',
-                    'Computer Vision — 2 relevant projects analyzed',
-                    'SIH 2026 active team seeker & available',
-                  ]}
+                  matchScore={
+                    recommendations[0].matchScore ||
+                    Math.min(75 + (recommendations[0].verifiedSkills?.length || 0) * 5, 96)
+                  }
+                  matchReasons={
+                    recommendations[0].matchReasons || [
+                      `${recommendations[0].verifiedSkills?.[0]?.name || 'Verified capability'} detected in repository evidence`,
+                      `GLBITM ${recommendations[0].branch} student`,
+                    ]
+                  }
                   verifiedSkills={recommendations[0].verifiedSkills || []}
                   selfDeclaredSkills={recommendations[0].selfDeclaredSkills || []}
                   availability={recommendations[0].availability}
-                  projectCount={recommendations[0].projectCount || 2}
+                  projectCount={recommendations[0].projectCount || 0}
                   featured={true}
                 />
               </div>
@@ -185,15 +197,17 @@ export default function DashboardPage() {
                   branch={st.branch}
                   year={st.year}
                   avatarUrl={st.avatarUrl}
-                  matchScore={91 - idx * 3}
-                  matchReasons={[
-                    'Backend API evidence in Node/PostgreSQL',
-                    'SIH 2026 interest & available',
-                  ]}
+                  matchScore={st.matchScore || Math.min(70 + (st.verifiedSkills?.length || 0) * 4 - idx * 2, 92)}
+                  matchReasons={
+                    st.matchReasons || [
+                      `${st.verifiedSkills?.[0]?.name || 'Verified evidence'} in submitted projects`,
+                      `GLBITM ${st.branch} student`,
+                    ]
+                  }
                   verifiedSkills={st.verifiedSkills || []}
                   selfDeclaredSkills={st.selfDeclaredSkills || []}
                   availability={st.availability}
-                  projectCount={st.projectCount || 2}
+                  projectCount={st.projectCount || 0}
                   featured={false}
                 />
               ))}

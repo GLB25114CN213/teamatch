@@ -38,13 +38,29 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, description, githubUrl, liveUrl, demoUrl, role, teamSize, technologies, uploadedFiles } = body;
+    const { title, description, githubUrl, liveUrl, demoUrl, role, teamSize, technologies, uploadedFiles, branch, year, bio, linkedinUrl } = body;
 
     if (!title || !description) {
       return NextResponse.json({ error: 'Project title and description are required.' }, { status: 400 });
     }
 
     const studentId = user.profile.id;
+
+    // Update profile metadata if provided
+    const profileUpdateData: any = {};
+    if (branch) profileUpdateData.branch = branch;
+    if (year) profileUpdateData.year = year;
+    if (bio !== undefined) profileUpdateData.bio = bio;
+    if (linkedinUrl) profileUpdateData.linkedinUrl = linkedinUrl;
+    if (githubUrl) profileUpdateData.githubUrl = githubUrl;
+
+    if (Object.keys(profileUpdateData).length > 0) {
+      await prisma.studentProfile.update({
+        where: { id: studentId },
+        data: profileUpdateData,
+      });
+    }
+
     const normalizedUrl = githubUrl ? normalizeGithubUrl(githubUrl) : null;
 
     let project;

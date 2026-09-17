@@ -95,6 +95,19 @@ export function ProjectCard({
       {/* Description */}
       <p className="text-xs text-gray-600 mt-3 leading-relaxed">{description}</p>
 
+      {/* Failure Message */}
+      {isFailed && (
+        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 space-y-1">
+          <p className="font-bold flex items-center gap-1">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+            AI Analysis Could Not Be Completed
+          </p>
+          <p className="text-[11px] text-red-700">
+            {analysis?.failureReason || 'Analysis process encountered an error. Click Retry Analysis to run again.'}
+          </p>
+        </div>
+      )}
+
       {/* Verified Skills */}
       {verifiedSkills.length > 0 && (
         <div className="mt-4">

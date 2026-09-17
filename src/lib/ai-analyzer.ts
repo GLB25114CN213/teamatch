@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from './prisma';
-import { fetchGithubRepoDetails } from './github';
+import { fetchGithubRepoDetails, normalizeGithubUrl } from './github';
 
 export async function processProjectAiAnalysis(projectId: string) {
   console.log(`🤖 Starting AI analysis for Project ID: ${projectId}`);
@@ -28,20 +28,43 @@ export async function processProjectAiAnalysis(projectId: string) {
   });
 
   try {
-    // Fetch GitHub details if githubUrl exists
-    let repoEvidence = null;
-    if (project.githubUrl) {
-      repoEvidence = await fetchGithubRepoDetails(project.githubUrl);
+    const normalizedUrl = project.githubUrl ? normalizeGithubUrl(project.githubUrl) : null;
+    let result: any = null;
+
+    // Check RepositoryCache first if repository URL exists
+    if (normalizedUrl) {
+      const cached = await prisma.repositoryCache.findUnique({
+        where: { normalizedUrl },
+      });
+
+      if (cached && cached.analysisJson) {
+        try {
+          result = JSON.parse(cached.analysisJson);
+          console.log(`⚡ Reusing cached AI analysis for repository: ${normalizedUrl}`);
+        } catch {
+          result = null;
+        }
+      }
     }
 
-    let result;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (apiKey) {
-      // Use Gemini API
+    // Fetch GitHub details if githubUrl exists and not cached
+    let repoEvidence = null;
+    if (project.githubUrl) {
       try {
-        const ai = new GoogleGenAI({ apiKey });
-        const prompt = `Analyze this college technical project and GitHub evidence for TeamMatch skill verification.
+        repoEvidence = await fetchGithubRepoDetails(project.githubUrl);
+      } catch (e) {
+        console.warn('Failed to fetch GitHub repo details:', e);
+      }
+    }
+
+    if (!result) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('GEMINI_API_KEY is not configured in environment variables. Real AI analysis cannot be performed.');
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `Analyze this college technical project and GitHub evidence for TeamMatch skill verification.
 Title: ${project.title}
 Description: ${project.description}
 Role: ${project.role || 'Contributor'}
@@ -64,21 +87,27 @@ Return ONLY a raw JSON object with NO markdown formatting, matching this EXACT T
   "summary": string
 }`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-        });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
 
-        const text = response.text || '';
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        result = JSON.parse(cleanJson);
-      } catch (err) {
-        console.warn('Gemini API call failed, falling back to deterministic analyzer:', err);
-        result = generateFallbackAiAnalysis(project, repoEvidence);
+      const text = response.text || '';
+      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      result = JSON.parse(cleanJson);
+
+      // Cache result if normalized URL exists
+      if (normalizedUrl && result) {
+        await prisma.repositoryCache.upsert({
+          where: { normalizedUrl },
+          update: { analysisJson: JSON.stringify(result) },
+          create: {
+            repoUrl: project.githubUrl || normalizedUrl,
+            normalizedUrl,
+            analysisJson: JSON.stringify(result),
+          },
+        });
       }
-    } else {
-      // Deterministic evidence analyzer fallback when GEMINI_API_KEY is not configured
-      result = generateFallbackAiAnalysis(project, repoEvidence);
     }
 
     // 2. Save Analysis to DB
@@ -94,23 +123,22 @@ Return ONLY a raw JSON object with NO markdown formatting, matching this EXACT T
         technicalOwnershipLevel: result.technicalOwnership?.level || 'High',
         technicalOwnershipEvidence: JSON.stringify(result.technicalOwnership?.evidence || []),
         summary: result.summary || 'Project evidence analyzed successfully.',
+        failureReason: null,
         analyzedAt: new Date(),
       },
     });
 
-    // 3. CRITICAL: Automatically register Extracted Skills into StudentSkill as VERIFIED SKILLS!
+    // 3. Register Extracted Skills into StudentSkill as VERIFIED SKILLS
     const extractedSkills = result.skills || [];
     for (const sk of extractedSkills) {
       if (!sk.name) continue;
-      
-      // Ensure skill exists in Skill master catalog
+
       const skillRecord = await prisma.skill.upsert({
         where: { name: sk.name },
         update: {},
         create: { name: sk.name, category: 'Technical' },
       });
 
-      // Upsert into StudentSkill as VERIFIED skill
       await prisma.studentSkill.upsert({
         where: {
           studentId_skillId_isVerified: {
@@ -122,7 +150,7 @@ Return ONLY a raw JSON object with NO markdown formatting, matching this EXACT T
         update: {
           confidence: sk.confidence || 'High',
           evidenceCount: { increment: 1 },
-          evidenceSummary: `${sk.evidence} (Source: ${sk.source || 'Project Evidence'})`,
+          evidenceSummary: `${sk.evidence || 'Extracted from repository'} (Source: ${sk.source || 'Project Evidence'})`,
         },
         create: {
           studentId: project.studentId,
@@ -130,7 +158,7 @@ Return ONLY a raw JSON object with NO markdown formatting, matching this EXACT T
           isVerified: true,
           confidence: sk.confidence || 'High',
           evidenceCount: 1,
-          evidenceSummary: `${sk.evidence} (Source: ${sk.source || 'Project Evidence'})`,
+          evidenceSummary: `${sk.evidence || 'Extracted from repository'} (Source: ${sk.source || 'Project Evidence'})`,
         },
       });
     }
@@ -139,7 +167,7 @@ Return ONLY a raw JSON object with NO markdown formatting, matching this EXACT T
   } catch (err) {
     const errorMsg = (err as Error).message || 'Unknown analysis error';
     console.error(`❌ AI Analysis failed for Project ID: ${projectId}:`, errorMsg);
-    
+
     await prisma.projectAnalysis.update({
       where: { projectId },
       data: {
@@ -151,54 +179,3 @@ Return ONLY a raw JSON object with NO markdown formatting, matching this EXACT T
   }
 }
 
-function generateFallbackAiAnalysis(project: any, repoEvidence: any) {
-  let declaredTechs: string[] = [];
-  try {
-    declaredTechs = JSON.parse(project.technologies || '[]');
-  } catch {
-    declaredTechs = ['TypeScript', 'React'];
-  }
-
-  const combinedLangs = Array.from(
-    new Set([...declaredTechs, ...(repoEvidence?.languages || []), repoEvidence?.language].filter(Boolean))
-  );
-
-  const skills = combinedLangs.map((tech) => ({
-    name: tech,
-    confidence: 'High',
-    evidence: `Verified in ${project.title} (${repoEvidence?.commitCount || 12} commits analyzed)`,
-    source: repoEvidence ? 'GitHub Repository' : 'Project Code Submission',
-  }));
-
-  // Determine domain
-  const text = (project.title + ' ' + project.description).toLowerCase();
-  const domains: string[] = [];
-  if (text.includes('ai') || text.includes('vision') || text.includes('model') || text.includes('ml')) domains.push('AI/ML');
-  if (text.includes('web') || text.includes('react') || text.includes('frontend') || text.includes('portal')) domains.push('Web Development');
-  if (text.includes('iot') || text.includes('esp32') || text.includes('drone') || text.includes('sensor')) domains.push('IoT');
-  if (text.includes('health') || text.includes('safety') || text.includes('medical')) domains.push('Healthcare');
-  if (domains.length === 0) domains.push('Software Engineering');
-
-  const complexity = combinedLangs.length >= 4 || repoEvidence?.commitCount > 20 ? 'Advanced' : 'Intermediate';
-
-  return {
-    skills,
-    domains,
-    complexity,
-    aiAssistance: {
-      level: text.includes('fastapi') || text.includes('scaffolding') ? 'Moderate' : 'Light',
-      evidence: [
-        'Boilerplate structure detected in configuration files',
-        'Human commit patterns verified across source files',
-      ],
-    },
-    technicalOwnership: {
-      level: 'High',
-      evidence: [
-        `Student authored ${repoEvidence?.studentCommitCount || 10} meaningful commits`,
-        'Custom implementation logic verified in core modules',
-      ],
-    },
-    summary: `Evidence-backed analysis completed for ${project.title}. Extracted ${skills.length} verified technical skills.`,
-  };
-}
