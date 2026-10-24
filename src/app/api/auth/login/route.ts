@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     if (!email || !validateGlbitmEmail(email)) {
       return NextResponse.json(
-        { error: 'Login requires a valid verified GLBITM student email (@glbitm.ac.in).' },
+        { error: 'Please enter a valid email address.' },
         { status: 400 }
       );
     }

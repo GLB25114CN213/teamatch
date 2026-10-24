@@ -41,11 +41,11 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-[#0A2B22] text-[#B7F34A] border border-[#B7F34A]/30 inline-flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#B7F34A]" />
-            GLBITM Student Portal
+            Student Portal
           </span>
           <h1 className="font-serif-editorial text-3xl text-gray-900">Welcome Back</h1>
           <p className="text-xs text-[#5A6963] font-sans-editorial">
-            Log in with your verified @glbitm.ac.in credentials to access candidate recommendations.
+            Log in with your credentials to access candidate recommendations.
           </p>
         </div>
 
@@ -54,12 +54,12 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-              GLBITM Email
+              Email Address
             </label>
             <input
               type="email"
               required
-              placeholder="student.name.cse24@glbitm.ac.in"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 bg-[#F8F7F5] border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#0A2B22]"
@@ -93,7 +93,7 @@ export default function LoginPage() {
         <div className="text-center pt-2 text-xs text-[#5A6963]">
           Need an account?{' '}
           <Link href="/auth/register" className="font-extrabold text-[#0A2B22] hover:underline">
-            Register with GLBITM Email →
+            Register for TeamMatch →
           </Link>
         </div>
       </div>

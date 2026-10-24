@@ -19,9 +19,10 @@ export interface MatchRecommendation {
 
 export function calculateRealStudentMatchScore(
   student: {
-    skills: Array<{ isVerified: boolean; confidence?: string | null; skill: { name: string } }>;
-    projects: Array<{ title: string; description: string; analysis?: { domainsJson?: string } | null }>;
+    skills?: Array<{ isVerified: boolean; confidence?: string | null; skill: { name: string } }>;
+    projects?: Array<{ title: string; description: string; analysis?: { domainsJson?: string } | null }>;
     interests?: string | null;
+    preferredDomains?: string | null;
     availability?: string;
   },
   requiredSkills: string[],
@@ -31,8 +32,11 @@ export function calculateRealStudentMatchScore(
   const reasons: string[] = [];
   let score = 0;
 
-  const verified = student.skills.filter((s) => s.isVerified);
-  const selfDeclared = student.skills.filter((s) => !s.isVerified);
+  const skillsList = student.skills || [];
+  const projectsList = student.projects || [];
+
+  const verified = skillsList.filter((s) => s.isVerified);
+  const selfDeclared = skillsList.filter((s) => !s.isVerified);
   const verifiedMap = new Map(verified.map((v) => [v.skill.name.toLowerCase(), v]));
   const selfDeclaredSet = new Set(selfDeclared.map((s) => s.skill.name.toLowerCase()));
 
@@ -69,7 +73,7 @@ export function calculateRealStudentMatchScore(
     const text = opportunityTitleDesc.toLowerCase();
     let relevantProjectCount = 0;
 
-    for (const proj of student.projects) {
+    for (const proj of projectsList) {
       const projText = (proj.title + ' ' + proj.description).toLowerCase();
       let domains: string[] = [];
       try {

@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
-import { validateGlbitmEmail, generateOtp, hashPassword } from '@/lib/auth';
+import { validateGlbitmEmail, hashPassword, signJwtToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { sendOtpEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, name, password } = body;
+    const { email, name, password, branch, year, bio, linkedinUrl, githubUrl } = body;
 
     if (!email || !validateGlbitmEmail(email)) {
       return NextResponse.json(
-        { error: 'Registration is restricted strictly to verified GLBITM students (@glbitm.ac.in).' },
+        { error: 'Please enter a valid email address.' },
         { status: 400 }
       );
     }
@@ -26,52 +25,49 @@ export async function POST(req: Request) {
     const cleanEmail = email.toLowerCase().trim();
 
     const existingUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (existingUser && existingUser.isVerified) {
-      return NextResponse.json({ error: 'An account with this GLBITM email already exists. Please log in.' }, { status: 400 });
+    if (existingUser) {
+      return NextResponse.json({ error: 'An account with this email already exists. Please log in.' }, { status: 400 });
     }
 
-    const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Save token
-    await prisma.verificationToken.create({
+    const passwordHash = await hashPassword(password);
+    const user = await prisma.user.create({
       data: {
         email: cleanEmail,
-        token: otp,
-        expiresAt,
+        name: name.trim(),
+        passwordHash,
+        isVerified: true,
       },
     });
 
-    // Create draft unverified user if not existing
-    const passwordHash = await hashPassword(password);
-    if (!existingUser) {
-      await prisma.user.create({
-        data: {
-          email: cleanEmail,
-          name,
-          passwordHash,
-          isVerified: false,
-        },
-      });
-    }
-
-    // Send OTP email via SMTP
-    const emailResult = await sendOtpEmail({
-      toEmail: cleanEmail,
-      studentName: name,
-      otp,
+    const profile = await prisma.studentProfile.create({
+      data: {
+        userId: user.id,
+        branch: branch || 'CSE',
+        year: year || '3rd Year',
+        bio: bio || null,
+        linkedinUrl: linkedinUrl || `https://linkedin.com/in/${name.toLowerCase().replace(/\s+/g, '-')}`,
+        githubUrl: githubUrl || `https://github.com/${name.toLowerCase().replace(/\s+/g, '')}`,
+        interests: JSON.stringify(['Hackathons', 'Web Development']),
+        preferredDomains: JSON.stringify(['AI/ML', 'Web Dev']),
+      },
     });
 
-    const isSmtpActive = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
-
-    return NextResponse.json({
-      message: isSmtpActive
-        ? `A 6-digit verification code has been sent to your GLBITM inbox (${cleanEmail}).`
-        : 'Verification code generated for your GLBITM email.',
-      email: cleanEmail,
-      // Only include on-screen preview if SMTP is not configured
-      otpPreview: isSmtpActive ? undefined : otp,
+    const token = signJwtToken({ userId: user.id, email: user.email, name: user.name });
+    const response = NextResponse.json({
+      message: 'Account created successfully! Welcome to TeamMatch.',
+      user: { id: user.id, email: user.email, name: user.name, isVerified: true },
+      profile,
     });
+
+    response.cookies.set('teamatch_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

@@ -14,7 +14,7 @@ export interface JWTPayload {
 export function validateGlbitmEmail(email: string): boolean {
   if (!email) return false;
   const cleanEmail = email.trim().toLowerCase();
-  return cleanEmail.endsWith('@glbitm.ac.in');
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail);
 }
 
 export function generateOtp(): string {
