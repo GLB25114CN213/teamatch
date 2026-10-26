@@ -37,14 +37,14 @@ export async function GET(req: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const formatted = students.map((s) => {
-      const verified = s.skills.filter((sk) => sk.isVerified);
-      const selfDeclared = s.skills.filter((sk) => !sk.isVerified);
+    const formatted = students.map((s: any) => {
+      const verified = (s.skills || []).filter((sk: any) => sk.isVerified);
+      const selfDeclared = (s.skills || []).filter((sk: any) => !sk.isVerified);
 
       return {
         id: s.id,
-        name: s.user.name,
-        email: s.user.email,
+        name: s.user?.name || '',
+        email: s.user?.email || '',
         branch: s.branch,
         year: s.year,
         bio: s.bio,
@@ -52,9 +52,9 @@ export async function GET(req: Request) {
         linkedinUrl: s.linkedinUrl,
         githubUrl: s.githubUrl,
         availability: s.availability,
-        verifiedSkills: verified.map((v) => ({ name: v.skill.name, confidence: v.confidence || 'High' })),
-        selfDeclaredSkills: selfDeclared.map((sd) => ({ name: sd.skill.name })),
-        projectCount: s.projects.length,
+        verifiedSkills: verified.map((v: any) => ({ name: v.skill?.name || v.name || '', confidence: v.confidence || 'High' })),
+        selfDeclaredSkills: selfDeclared.map((sd: any) => ({ name: sd.skill?.name || sd.name || '' })),
+        projectCount: (s.projects || []).length,
       };
     });
 

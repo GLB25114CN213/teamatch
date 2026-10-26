@@ -165,31 +165,32 @@ export async function calculateTeammateMatchesForOpportunity(
   const recommendations: MatchRecommendation[] = [];
 
   for (const s of students) {
-    const verified = s.skills.filter((sk) => sk.isVerified);
-    const selfDeclared = s.skills.filter((sk) => !sk.isVerified);
+    const sObj = s as any;
+    const verified = (sObj.skills || []).filter((sk: any) => sk.isVerified);
+    const selfDeclared = (sObj.skills || []).filter((sk: any) => !sk.isVerified);
 
     const { score, reasons } = calculateRealStudentMatchScore(
-      s,
+      sObj,
       requiredSkills,
       opportunity.type,
       `${opportunity.title} ${opportunity.description}`
     );
 
     recommendations.push({
-      studentId: s.id,
-      studentName: s.user.name,
-      avatarUrl: s.avatarUrl,
-      branch: s.branch,
-      year: s.year,
-      bio: s.bio,
-      linkedinUrl: s.linkedinUrl,
-      githubUrl: s.githubUrl,
-      availability: s.availability,
+      studentId: sObj.id,
+      studentName: sObj.user?.name || '',
+      avatarUrl: sObj.avatarUrl,
+      branch: sObj.branch,
+      year: sObj.year,
+      bio: sObj.bio,
+      linkedinUrl: sObj.linkedinUrl,
+      githubUrl: sObj.githubUrl,
+      availability: sObj.availability,
       matchScore: score,
       matchReasons: reasons,
-      verifiedSkills: verified.map((v) => ({ name: v.skill.name, confidence: v.confidence || 'High' })),
-      selfDeclaredSkills: selfDeclared.map((sd) => ({ name: sd.skill.name })),
-      projectCount: s.projects.length,
+      verifiedSkills: verified.map((v: any) => ({ name: v.skill?.name || v.name || '', confidence: v.confidence || 'High' })),
+      selfDeclaredSkills: selfDeclared.map((sd: any) => ({ name: sd.skill?.name || sd.name || '' })),
+      projectCount: (sObj.projects || []).length,
     });
   }
 

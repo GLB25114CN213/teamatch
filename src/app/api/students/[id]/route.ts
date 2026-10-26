@@ -22,13 +22,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'Student profile not found.' }, { status: 404 });
     }
 
-    const verified = student.skills.filter((sk) => sk.isVerified);
-    const selfDeclared = student.skills.filter((sk) => !sk.isVerified);
+    const verified = (student.skills || []).filter((sk: any) => sk.isVerified);
+    const selfDeclared = (student.skills || []).filter((sk: any) => !sk.isVerified);
 
     return NextResponse.json({
       student: {
         id: student.id,
-        name: student.user.name,
+        name: student.user?.name || '',
         branch: student.branch,
         year: student.year,
         bio: student.bio,
@@ -38,13 +38,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         availability: student.availability,
         interests: JSON.parse(student.interests || '[]'),
         preferredDomains: JSON.parse(student.preferredDomains || '[]'),
-        verifiedSkills: verified.map((v) => ({
-          name: v.skill.name,
+        verifiedSkills: verified.map((v: any) => ({
+          name: v.skill?.name || v.name || '',
           confidence: v.confidence || 'High',
           evidenceSummary: v.evidenceSummary,
         })),
-        selfDeclaredSkills: selfDeclared.map((sd) => ({ name: sd.skill.name })),
-        projects: student.projects,
+        selfDeclaredSkills: selfDeclared.map((sd: any) => ({ name: sd.skill?.name || sd.name || '' })),
+        projects: student.projects || [],
       },
     });
   } catch (err) {
