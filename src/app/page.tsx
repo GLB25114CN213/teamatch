@@ -16,6 +16,7 @@ import {
   Code2,
 } from 'lucide-react';
 import { NetworkGraphHero } from '@/components/NetworkGraphHero';
+import { ExplainableMatchmakingDemo } from '@/components/ExplainableMatchmakingDemo';
 
 export default function LandingPage() {
   return (
@@ -204,74 +205,12 @@ export default function LandingPage() {
             <span className="text-[#B7F34A] italic font-serif-editorial">Find the missing skill.</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#9BB0A6] font-sans-editorial max-w-lg leading-relaxed">
-            TeamMatch analyzes project requirements against verified developer profiles to explain exactly why candidates match.
+            TeamMatch analyzes project requirements against verified developer profiles to explain exactly why candidates match with real mathematical percentages.
           </p>
         </div>
 
-        {/* Large Interactive Match Showcase */}
-        <div className="bg-[#051A14] p-6 sm:p-8 rounded-2xl border border-[#B7F34A]/20 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          
-          {/* Candidate A (YOU) */}
-          <div className="md:col-span-4 p-5 bg-[#0A2B22] rounded-xl border border-[#B7F34A]/15 space-y-3">
-            <div className="flex items-center space-x-3">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
-                alt="You"
-                className="w-10 h-10 rounded-lg object-cover border border-[#B7F34A]/30"
-              />
-              <div>
-                <span className="font-extrabold text-white text-sm block">YOU (Lead)</span>
-                <span className="text-[10px] text-[#9BB0A6]">CSE · 3rd Year</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase text-[#9BB0A6] block">Verified Stack</span>
-              <div className="flex flex-wrap gap-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#051A14] text-[#B7F34A] border border-[#B7F34A]/30">Python</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#051A14] text-[#B7F34A] border border-[#B7F34A]/30">Node.js</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#051A14] text-[#B7F34A] border border-[#B7F34A]/30">AI/ML</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Plus Sign / Connection Indicator */}
-          <div className="md:col-span-1 text-center font-serif-editorial text-3xl text-[#B7F34A]">
-            +
-          </div>
-
-          {/* Candidate B (RECOMMENDED MATCH) */}
-          <div className="md:col-span-4 p-5 bg-[#0A2B22] rounded-xl border border-[#B7F34A]/15 space-y-3">
-            <div className="flex items-center space-x-3">
-              <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
-                alt="Candidate Profile"
-                className="w-10 h-10 rounded-lg object-cover border border-[#B7F34A]/30"
-              />
-              <div>
-                <span className="font-extrabold text-white text-sm block">ML Specialist</span>
-                <span className="text-[10px] text-[#9BB0A6]">IT · 3rd Year</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase text-[#9BB0A6] block">Verified Stack</span>
-              <div className="flex flex-wrap gap-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#19C37D]/20 text-[#19C37D] border border-[#19C37D]/30">Computer Vision</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#19C37D]/20 text-[#19C37D] border border-[#19C37D]/30">PyTorch</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#19C37D]/20 text-[#19C37D] border border-[#19C37D]/30">React</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Match Score Result */}
-          <div className="md:col-span-3 p-5 bg-[#0A2B22] rounded-xl border border-[#B7F34A]/30 text-center space-y-2">
-            <span className="font-serif-editorial text-4xl text-[#B7F34A] block font-bold">94%</span>
-            <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#B7F34A] block">MATCH SCORE</span>
-            <p className="text-[11px] text-[#F8F7F5] font-medium leading-tight pt-1">
-              “Fills your team’s Computer Vision & Frontend gap for SIH 2026.”
-            </p>
-          </div>
-
-        </div>
+        {/* Dynamic & Real Mathematical Match Showcase */}
+        <ExplainableMatchmakingDemo />
       </section>
 
       {/* SECTION 5: VERIFIED PROJECTS PORTFOLIO */}

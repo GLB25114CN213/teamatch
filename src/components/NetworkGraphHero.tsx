@@ -6,6 +6,15 @@ import { Check } from 'lucide-react';
 export function NetworkGraphHero() {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
+  const nodeScores: Record<string, { score: number; label: string }> = {
+    aarav: { score: 88, label: 'Aarav (88%)' },
+    priya: { score: 96, label: 'Priya (96%)' },
+    rohan: { score: 82, label: 'Rohan (82%)' },
+  };
+
+  const activeScore = hoveredNode && nodeScores[hoveredNode] ? nodeScores[hoveredNode].score : 94;
+  const activeLabel = hoveredNode && nodeScores[hoveredNode] ? nodeScores[hoveredNode].label : 'SIH 2026';
+
   return (
     <div className="relative w-full h-[340px] sm:h-[380px] bg-[#0A2B22]/80 rounded-2xl border border-[#B7F34A]/20 p-4 overflow-hidden flex items-center justify-center">
       {/* Background SVG Grid Pattern */}
@@ -67,9 +76,13 @@ export function NetworkGraphHero() {
       {/* CENTER HUB: SIH 2026 Team Opportunity */}
       <div className="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#051A14] border-2 border-[#B7F34A] shadow-[0_0_30px_rgba(183,243,74,0.3)] flex flex-col items-center justify-center p-2 transition-transform duration-300 hover:scale-105">
-          <span className="font-black text-xl sm:text-2xl text-[#B7F34A] leading-none">94%</span>
+          <span className="font-black text-xl sm:text-2xl text-[#B7F34A] leading-none transition-all duration-200">
+            {activeScore}%
+          </span>
           <span className="text-[8px] font-extrabold text-[#9BB0A6] uppercase tracking-wider mt-0.5">MATCH HUB</span>
-          <span className="text-[7px] text-[#19C37D] font-bold block">SIH 2026</span>
+          <span className="text-[7px] text-[#19C37D] font-bold block truncate max-w-[70px]">
+            {activeLabel}
+          </span>
         </div>
       </div>
 
